@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>语音转文本工具</title>
+    <title>语音转文本与AI修正工具</title>
     <style>
         /* Google Font (Optional) */
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
@@ -39,7 +39,7 @@
             font-family: var(--font-family);
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start; /* Align top for longer content */
             min-height: 100vh;
             background-color: var(--background-color);
             color: var(--text-color);
@@ -53,7 +53,7 @@
             border-radius: var(--border-radius);
             box-shadow: var(--box-shadow);
             text-align: center;
-            max-width: 650px;
+            max-width: 900px; /* Increased max-width for side-by-side */
             width: 100%;
             display: flex;
             flex-direction: column;
@@ -140,7 +140,7 @@
              box-shadow: 0 2px 5px rgba(255, 193, 7, 0.4);
          }
          #recordButton.processing .spinner {
-            display: inline-block;
+             display: inline-block;
          }
          #recordButton.processing .icon { /* Hide main icon when processing */
              display: none;
@@ -201,24 +201,38 @@
              display: inline-block;
          }
 
-
-        #transcriptContainer {
-            margin-top: 15px;
+        /* Wrapper for transcript and correction areas */
+        .results-wrapper {
+            display: flex;
+            gap: 20px; /* Space between the two boxes */
             width: 100%;
-            text-align: left;
-            position: relative; /* For positioning the copy button */
+            margin-top: 15px;
         }
 
-        #transcriptLabel {
+        /* Styling for individual transcript/correction containers */
+        #transcriptContainer,
+        #correctionContainer {
+            flex: 1; /* Each takes up half the space */
+            min-width: 0; /* Prevent flex items from overflowing */
+            text-align: left;
+            position: relative; /* For positioning the copy button */
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        #transcriptLabel,
+        #correctionLabel {
             display: block;
-            margin-bottom: 8px;
+            /* margin-bottom: 8px; */ /* Gap handled by flex container */
             font-weight: 500;
             color: var(--text-color);
         }
 
-        #transcript {
+        #transcript,
+        #correctedTranscript {
             width: 100%;
-            min-height: 120px;
+            min-height: 150px; /* Adjusted height */
             padding: 15px;
             border: 1px solid var(--border-color);
             border-radius: var(--border-radius);
@@ -232,63 +246,69 @@
             max-height: 350px;
             color: var(--text-color);
             transition: border-color var(--transition-speed) ease;
+            flex-grow: 1; /* Allow text area to grow */
         }
-        #transcript:focus {
+        #correctedTranscript {
+            background-color: #e9ecef; /* Slightly different for visual distinction */
+        }
+
+        #transcript:focus,
+        #correctedTranscript:focus {
             outline: none;
             border-color: var(--primary-color);
             box-shadow: 0 0 0 2px var(--primary-light);
         }
 
-        #copyButton {
+        /* Shared copy button styles */
+        .copy-button {
             padding: 8px 15px;
             font-size: 0.9em;
             font-weight: 500;
             border: 1px solid var(--secondary-color);
             border-radius: var(--border-radius);
             cursor: pointer;
-            background-color: var(--card-background); /* Match card background */
+            background-color: var(--card-background);
             color: var(--secondary-color);
             transition: all var(--transition-speed) ease;
             display: flex;
             align-items: center;
             gap: 6px;
-            /* Position button inside/near the text area */
-             position: absolute;
-             top: -40px; /* Adjust as needed */
-             right: 0;
-             z-index: 10; /* Ensure it's above the label */
-        }
-        #copyButton .icon {
+            position: absolute;
+            top: -40px; /* Position above the label */
+            right: 0;
+            z-index: 10;
+         }
+         .copy-button .icon {
             width: 16px;
             height: 16px;
             fill: currentColor;
-        }
-
-
-        #copyButton:hover:not(:disabled) {
+         }
+        .copy-button:hover:not(:disabled) {
             background-color: var(--secondary-color);
             color: white;
             border-color: var(--secondary-color);
         }
-         #copyButton:active:not(:disabled) {
-             transform: scale(0.97);
-         }
-
-        #copyButton:disabled {
+        .copy-button:active:not(:disabled) {
+            transform: scale(0.97);
+        }
+        .copy-button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
-         #copyButton.copied {
-             background-color: var(--success-color);
-             border-color: var(--success-color);
-             color: white;
+        .copy-button.copied {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+            color: white;
+        }
+         .copy-button.copied .icon-copy {
+            display: none;
          }
-          #copyButton.copied .icon-copy {
-             display: none;
-          }
-          #copyButton.copied .icon-check {
-             display: inline-block !important; /* Force show check icon */
+         .copy-button.copied .icon-check {
+            display: inline-block !important; /* Force show check icon */
          }
+         /* Specific IDs for JS targeting */
+         #copyButton {}
+         #copyCorrectionButton {}
 
 
         .spinner {
@@ -304,13 +324,13 @@
              border-top-color: #333; /* Spinner color for processing button */
          }
          #statusContainer .spinner {
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(0, 0, 0, 0.1);
-             border-top-color: currentColor; /* Spinner color matches status text color */
-             animation: spin 1s linear infinite;
-             display: none; /* Hide by default */
-         }
+             width: 16px;
+             height: 16px;
+             border: 2px solid rgba(0, 0, 0, 0.1);
+              border-top-color: currentColor; /* Spinner color matches status text color */
+              animation: spin 1s linear infinite;
+              display: none; /* Hide by default */
+          }
 
 
         @keyframes spin {
@@ -321,7 +341,7 @@
         @media (max-width: 700px) {
             .container {
                 padding: 20px;
-                 gap: 20px;
+                gap: 20px;
             }
              h1 {
                  font-size: 1.6em;
@@ -331,16 +351,26 @@
                  padding: 10px 20px;
                  min-width: 180px;
              }
-              #transcript {
-                  min-height: 100px;
-                  max-height: 250px;
-              }
-             #copyButton {
+            .results-wrapper {
+                flex-direction: column; /* Stack vertically */
+                gap: 15px;
+            }
+            #transcriptContainer,
+            #correctionContainer {
+                flex: none; /* Reset flex property */
+                width: 100%;
+            }
+            #transcript,
+            #correctedTranscript {
+                min-height: 100px;
+                max-height: 200px; /* Reduced max height */
+            }
+            .copy-button {
                  padding: 6px 12px;
                  font-size: 0.85em;
                  top: -35px; /* Adjust for smaller screens */
              }
-        }
+         }
          @media (max-width: 400px) {
               h1 {
                   font-size: 1.4em;
@@ -348,10 +378,15 @@
               #recordButton {
                   width: 100%; /* Full width on very small screens */
               }
-               #copyButton {
-                 position: static; /* Stack copy button below on very small screens */
+             /* Stack copy buttons below text areas on very small screens */
+             #transcriptContainer,
+             #correctionContainer {
+                 position: static; /* Reset relative positioning */
+             }
+             .copy-button {
+                 position: static; /* Stack copy button below */
                  margin-top: 10px;
-                 align-self: flex-end;
+                 align-self: flex-end; /* Align button to the right */
              }
          }
 
@@ -378,41 +413,56 @@
     </svg>
 
     <div class="container">
-        <h1>语音转文本</h1>
-        <p class="description">点击按钮开始录音，再次点击停止并进行语音转文字。</p>
+        <h1>语音转文本 & AI 修正</h1>
+        <p class="description">点击按钮开始录音，再次点击停止。转换后，AI 将自动检查并修正文本。</p>
 
         <button id="recordButton">
             <svg class="icon icon-mic" aria-hidden="true"><use xlink:href="#icon-mic"></use></svg>
             <svg class="icon icon-stop" aria-hidden="true"><use xlink:href="#icon-stop"></use></svg>
             <span id="buttonText">开始录音</span>
-            <span class="spinner"></span> </button>
+            <span class="spinner"></span>
+        </button>
 
         <div id="statusContainer" class="idle">
              <svg class="icon icon-success" aria-hidden="true"><use xlink:href="#icon-success"></use></svg>
              <svg class="icon icon-error" aria-hidden="true"><use xlink:href="#icon-error"></use></svg>
-             <span class="spinner"></span> <span id="statusText">状态: 空闲</span>
+             <span class="spinner"></span>
+             <span id="statusText">状态: 空闲</span>
         </div>
 
+        <div class="results-wrapper">
+            <div id="transcriptContainer">
+                <label id="transcriptLabel" for="transcript">原始转换结果:</label>
+                <div id="transcript" role="log" aria-live="polite" contenteditable="false" aria-label="原始转录文本区域"></div>
+                <button id="copyButton" class="copy-button" disabled title="复制原始文本">
+                    <svg class="icon icon-copy" aria-hidden="true"><use xlink:href="#icon-copy"></use></svg>
+                    <svg class="icon icon-check" aria-hidden="true"><use xlink:href="#icon-check"></use></svg>
+                    <span class="copy-button-text">复制</span>
+                </button>
+            </div>
 
-        <div id="transcriptContainer">
-            <label id="transcriptLabel" for="transcript">转换结果:</label>
-            <div id="transcript" role="log" aria-live="polite" contenteditable="false" aria-label="转录文本区域"></div>
-             <button id="copyButton" disabled title="复制文本">
-                 <svg class="icon icon-copy" aria-hidden="true"><use xlink:href="#icon-copy"></use></svg>
-                 <svg class="icon icon-check" aria-hidden="true"><use xlink:href="#icon-check"></use></svg>
-                 <span class="copy-button-text">复制</span>
-             </button>
+            <div id="correctionContainer">
+                <label id="correctionLabel" for="correctedTranscript">AI 修正结果:</label>
+                <div id="correctedTranscript" role="log" aria-live="polite" contenteditable="false" aria-label="AI修正后的文本区域"></div>
+                <button id="copyCorrectionButton" class="copy-button" disabled title="复制修正文本">
+                    <svg class="icon icon-copy" aria-hidden="true"><use xlink:href="#icon-copy"></use></svg>
+                    <svg class="icon icon-check" aria-hidden="true"><use xlink:href="#icon-check"></use></svg>
+                    <span class="copy-button-text">复制</span>
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
         // --- Configuration ---
-        const API_KEY = "sk-e2a7YHPCZF3yPxpdu9zguWbNlawBJwAQ3a0jav4U6B5LlECK"; // YOUR_API_KEY - Still insecure client-side!
-        const API_URL = "https://api.zetatechs.com/v1/chat/completions"; // Proxy URL + Endpoint
+        const API_KEY = "sk-e2a7YHPCZF3yPxpdu9zguWbNlawBJwAQ3a0jav4U6B5LlECK"; // 请替换为你的 API Key (客户端暴露不安全!)
+        const API_URL = "https://api.zetatechs.com/v1/chat/completions"; // 你的代理 URL + 端点
         const MODEL_NAME = "gemini-2.0-flash";
-        const TRANSCRIPTION_PROMPT = "Transcribe the following audio. Only provide the transcribed text, nothing else."; // English prompt for AI logic
-        const AUDIO_MIME_TYPE = 'audio/ogg;codecs=opus'; // Common & supported format
-        const MAX_RETRIES = 2; // Max attempts for API call on failure (reduced from 3)
+        const TRANSCRIPTION_PROMPT = "Transcribe the following audio. Only provide the transcribed text, nothing else.使用简体中文"; // AI 转录提示 (英文)
+        // --- NEW: Correction Prompt ---
+        const CORRECTION_PROMPT = "Please proofread and correct the following text for fluency, typos, extra spaces, and punctuation errors. Output ONLY the corrected text, without any introduction, explanation, or quotation marks around the text."; // AI 修正提示 (英文)
+        const AUDIO_MIME_TYPE = 'audio/ogg;codecs=opus'; // 常用格式
+        const MAX_RETRIES = 2; // API 失败时最大重试次数
 
         // --- DOM Elements ---
         const recordButton = document.getElementById('recordButton');
@@ -424,13 +474,22 @@
         const copyButtonText = copyButton.querySelector('.copy-button-text');
         const recordButtonSpinner = recordButton.querySelector('.spinner');
         const statusSpinner = statusContainer.querySelector('.spinner');
+        // --- NEW: Correction Elements ---
+        const correctionContainer = document.getElementById('correctionContainer');
+        const correctedTranscriptDiv = document.getElementById('correctedTranscript');
+        const copyCorrectionButton = document.getElementById('copyCorrectionButton');
+        const copyCorrectionButtonText = copyCorrectionButton.querySelector('.copy-button-text');
+
 
         // Icon Elements inside recordButton
         const recordButtonMicIcon = recordButton.querySelector('.icon-mic');
         const recordButtonStopIcon = recordButton.querySelector('.icon-stop');
         // Icon Elements inside copyButton
-         const copyButtonCopyIcon = copyButton.querySelector('.icon-copy');
-         const copyButtonCheckIcon = copyButton.querySelector('.icon-check');
+        const copyButtonCopyIcon = copyButton.querySelector('.icon-copy');
+        const copyButtonCheckIcon = copyButton.querySelector('.icon-check');
+        // --- NEW: Icon Elements inside correction copyButton ---
+        const copyCorrectionButtonCopyIcon = copyCorrectionButton.querySelector('.icon-copy');
+        const copyCorrectionButtonCheckIcon = copyCorrectionButton.querySelector('.icon-check');
 
 
         // --- State Variables ---
@@ -440,6 +499,7 @@
         let stream;
         let permissionGranted = false;
         let retryCount = 0;
+        let correctionRetryCount = 0; // Separate retry count for correction
 
         // --- Functions ---
 
@@ -475,83 +535,88 @@
         // Update Status Display
         function updateStatus(message, type = "idle") { // type: idle, info, permission, recording, processing, success, error
              statusText.textContent = `状态: ${message}`;
-             statusContainer.className = `status-container ${type}`; // Use class for styling & icon visibility
+             // Reset class list completely before adding new type
+             statusContainer.className = 'status-container';
+             statusContainer.classList.add(type);
 
-             // Show/hide spinner in status area only when processing
+             // Show/hide spinner in status area only when processing or correction is processing
              statusSpinner.style.display = (type === 'processing') ? 'inline-block' : 'none';
          }
 
         // Start Recording
         async function startRecording() {
              if (!permissionGranted) {
-                  updateStatus("无法录音，缺少麦克风权限。", "error");
-                  await requestMicrophonePermission(); // Try again
-                  if (!permissionGranted) return;
-              }
+                 updateStatus("无法录音，缺少麦克风权限。", "error");
+                 await requestMicrophonePermission(); // Try again
+                 if (!permissionGranted) return;
+             }
 
-              if (isRecording) return;
+             if (isRecording) return;
 
-              updateStatus("正在初始化...", "info");
-              audioChunks = [];
-              transcriptDiv.textContent = ""; // Clear previous transcript
-              copyButton.disabled = true; // Disable copy button
-              resetCopyButtonState(); // Reset copy button visual state
+             updateStatus("正在初始化...", "info");
+             audioChunks = [];
+             transcriptDiv.textContent = ""; // Clear previous transcript
+             correctedTranscriptDiv.textContent = ""; // Clear correction area
+             copyButton.disabled = true; // Disable copy button
+             copyCorrectionButton.disabled = true; // Disable correction copy button
+             resetCopyButtonState(); // Reset copy button visual state
+             resetCorrectionCopyButtonState(); // Reset correction copy button state
 
-              try {
-                  stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+             try {
+                 stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-                  let options = {};
-                  if (MediaRecorder.isTypeSupported(AUDIO_MIME_TYPE)) {
-                      options.mimeType = AUDIO_MIME_TYPE;
-                  } // else use browser default
+                 let options = {};
+                 if (MediaRecorder.isTypeSupported(AUDIO_MIME_TYPE)) {
+                     options.mimeType = AUDIO_MIME_TYPE;
+                 } // else use browser default
 
-                  mediaRecorder = new MediaRecorder(stream, options);
+                 mediaRecorder = new MediaRecorder(stream, options);
 
-                  mediaRecorder.ondataavailable = event => {
-                      if (event.data.size > 0) {
-                          audioChunks.push(event.data);
-                      }
-                  };
+                 mediaRecorder.ondataavailable = event => {
+                     if (event.data.size > 0) {
+                         audioChunks.push(event.data);
+                     }
+                 };
 
-                  mediaRecorder.onstop = () => {
-                      isRecording = false;
-                      recordButton.classList.remove('recording');
-                      recordButton.classList.add('processing');
-                      buttonText.textContent = "处理中...";
-                      setRecordButtonIcon(null); // Hide icons
-                      recordButtonSpinner.style.display = 'inline-block'; // Show button spinner
-                      recordButton.disabled = true;
-                      updateStatus("正在处理音频...", "processing");
+                 mediaRecorder.onstop = () => {
+                     isRecording = false;
+                     recordButton.classList.remove('recording');
+                     recordButton.classList.add('processing');
+                     buttonText.textContent = "处理中...";
+                     setRecordButtonIcon(null); // Hide icons
+                     recordButtonSpinner.style.display = 'inline-block'; // Show button spinner
+                     recordButton.disabled = true;
+                     updateStatus("正在处理音频...", "processing");
 
-                      if (stream) {
-                          stream.getTracks().forEach(track => track.stop());
-                          stream = null;
-                      }
+                     if (stream) {
+                         stream.getTracks().forEach(track => track.stop());
+                         stream = null;
+                     }
 
-                      const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/ogg' }); // Fallback mime type
-                      retryCount = 0;
-                      sendAudioToApi(audioBlob);
-                  };
+                     const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/ogg' }); // Fallback mime type
+                     retryCount = 0;
+                     sendAudioToApi(audioBlob);
+                 };
 
-                  mediaRecorder.onerror = (event) => {
-                      console.error("MediaRecorder 错误:", event.error);
-                      updateStatus(`录音出错: ${event.error.name || '未知错误'}`, "error");
-                      stopRecordingCleanup(); // Clean up state forcefully
-                  };
+                 mediaRecorder.onerror = (event) => {
+                     console.error("MediaRecorder 错误:", event.error);
+                     updateStatus(`录音出错: ${event.error.name || '未知错误'}`, "error");
+                     stopRecordingCleanup(); // Clean up state forcefully
+                 };
 
-                  mediaRecorder.start();
-                  isRecording = true;
-                  recordButton.classList.add('recording');
-                  buttonText.textContent = "停止录音";
-                  setRecordButtonIcon('stop'); // Show stop icon
-                  updateStatus("正在录音...", "recording");
+                 mediaRecorder.start();
+                 isRecording = true;
+                 recordButton.classList.add('recording');
+                 buttonText.textContent = "停止录音";
+                 setRecordButtonIcon('stop'); // Show stop icon
+                 updateStatus("正在录音...", "recording");
 
-              } catch (err) {
-                  console.error("开始录音失败:", err);
-                  updateStatus(`无法开始录音: ${err.message}`, "error");
-                  stopRecordingCleanup(); // Ensure state is clean
-              }
-        }
+             } catch (err) {
+                 console.error("开始录音失败:", err);
+                 updateStatus(`无法开始录音: ${err.message}`, "error");
+                 stopRecordingCleanup(); // Ensure state is clean
+             }
+         }
 
          // Force cleanup if recording fails to start or has an error
          function stopRecordingCleanup() {
@@ -561,9 +626,16 @@
                  stream = null;
              }
              if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                 try { mediaRecorder.stop(); } catch(e) {} // Try to stop if possible
+                 try { mediaRecorder.stop(); } catch(e) { /* ignore */ } // Try to stop if possible
              }
              resetButtonState(); // Reset button visuals
+             // Also clear results and disable copy buttons
+             transcriptDiv.textContent = "";
+             correctedTranscriptDiv.textContent = "";
+             copyButton.disabled = true;
+             copyCorrectionButton.disabled = true;
+             resetCopyButtonState();
+             resetCorrectionCopyButtonState();
          }
 
 
@@ -593,11 +665,10 @@
             });
         }
 
-        // Send Audio to API
+        // Send Audio to API for Transcription
         async function sendAudioToApi(audioBlob) {
-            updateStatus(`正在发送到 AI (尝试 ${retryCount + 1}/${MAX_RETRIES + 1})...`, "processing");
-             // Get the actual mimeType used for recording
-             const recordedMimeType = mediaRecorder?.mimeType || AUDIO_MIME_TYPE;
+            updateStatus(`正在发送到 AI 转录 (尝试 ${retryCount + 1}/${MAX_RETRIES + 1})...`, "processing");
+            const recordedMimeType = mediaRecorder?.mimeType || AUDIO_MIME_TYPE;
 
             try {
                 const base64Audio = await blobToBase64(audioBlob);
@@ -605,16 +676,15 @@
                 const payload = {
                     model: MODEL_NAME,
                     messages: [ {
-                            role: "user",
-                            content: [
-                                { type: "text", text: TRANSCRIPTION_PROMPT },
-                                {
-                                    type: "image_url", // Adapting to common proxy pattern
-                                    image_url: { url: `data:${recordedMimeType};base64,${base64Audio}` }
-                                }
-                            ]
-                        }
-                    ],
+                        role: "user",
+                        content: [
+                            { type: "text", text: TRANSCRIPTION_PROMPT },
+                            {
+                                type: "image_url", // Adapting for multimodal endpoint
+                                image_url: { url: `data:${recordedMimeType};base64,${base64Audio}` }
+                            }
+                        ]
+                    } ],
                     max_tokens: 1500 // Increased slightly
                 };
 
@@ -629,12 +699,12 @@
 
                 if (!response.ok) {
                     let errorBody = `HTTP 状态 ${response.status}`;
-                    try { errorBody = await response.text(); } catch (e) {}
-                    throw new Error(`API 请求失败: ${errorBody.substring(0, 100)}`); // Limit error msg length
+                    try { errorBody = await response.text(); } catch (e) { /* ignore */ }
+                    throw new Error(`API 转录请求失败: ${errorBody.substring(0, 100)}`); // Limit error msg length
                 }
 
                 const data = await response.json();
-                resetButtonState(); // Reset button now we have a response (or final error)
+                resetButtonState(); // Reset button now transcription part is done or failed finally
 
                 let transcript = "";
                  // Standard OpenAI-like response structure
@@ -644,21 +714,29 @@
                  } else if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0 && data.candidates[0].content.parts[0].text) {
                     transcript = data.candidates[0].content.parts[0].text.trim();
                  } else {
-                     console.warn("未知的 API 响应结构:", data);
-                     transcript = "[无法解析响应]"; // Provide feedback
-                     updateStatus("收到无法解析的响应。", "error");
-                      copyButton.disabled = true;
+                     console.warn("未知的 API 转录响应结构:", data);
+                     transcript = "[无法解析转录响应]"; // Provide feedback
+                     updateStatus("收到无法解析的转录响应。", "error");
+                     copyButton.disabled = true;
+                     correctedTranscriptDiv.textContent = "[原文无效，无法修正]"; // Add note in correction box
+                     copyCorrectionButton.disabled = true;
                  }
 
 
-                if (transcript && transcript !== "[无法解析响应]") {
+                if (transcript && transcript !== "[无法解析转录响应]") {
                     transcriptDiv.textContent = transcript;
-                    updateStatus("转换完成。", "success");
+                    updateStatus("转录完成。正在调用 AI 检查...", "processing"); // Update status for next step
                     copyButton.disabled = false;
-                } else if (transcript !== "[无法解析响应]") { // Handle empty transcript case
-                     transcriptDiv.textContent = "[未识别到语音或返回为空]";
-                     updateStatus("未返回有效文本。", "info"); // Use 'info' or 'warning'
-                     copyButton.disabled = true;
+                    // --- Call AI for Correction ---
+                    correctionRetryCount = 0; // Reset correction retry count
+                    callAiForCorrection(transcript); // Automatically call correction
+                    // -----------------------------
+                } else if (transcript !== "[无法解析转录响应]") { // Handle empty transcript case
+                    transcriptDiv.textContent = "[未识别到语音或返回为空]";
+                    updateStatus("未返回有效文本。", "info"); // Use 'info' or 'warning'
+                    copyButton.disabled = true;
+                    correctedTranscriptDiv.textContent = "[原文无效，无法修正]";
+                    copyCorrectionButton.disabled = true;
                 } // else case (解析错误) handled above
 
 
@@ -666,16 +744,96 @@
                 console.error("发送音频到 API 时出错:", error);
                 if (retryCount < MAX_RETRIES) {
                     retryCount++;
-                    updateStatus(`API 错误: ${error.message}. 2秒后重试... (尝试 ${retryCount + 1}/${MAX_RETRIES + 1})`, "error");
+                    updateStatus(`转录 API 错误: ${error.message}. 2秒后重试... (尝试 ${retryCount + 1}/${MAX_RETRIES + 1})`, "error");
                     setTimeout(() => sendAudioToApi(audioBlob), 2000);
                 } else {
-                    updateStatus(`API 错误 (${MAX_RETRIES + 1}次尝试失败): ${error.message}`, "error");
+                    updateStatus(`转录 API 错误 (${MAX_RETRIES + 1}次尝试失败): ${error.message}`, "error");
                     transcriptDiv.textContent = "[转换失败]";
-                     resetButtonState(); // Ensure button is usable after final failure
-                     copyButton.disabled = true;
+                    correctedTranscriptDiv.textContent = "[原文转换失败，无法修正]";
+                    resetButtonState(); // Ensure button is usable after final failure
+                    copyButton.disabled = true;
+                    copyCorrectionButton.disabled = true;
                 }
             }
         }
+
+        // --- NEW: Call AI for Correction ---
+        async function callAiForCorrection(originalText) {
+             updateStatus(`AI 正在检查文本... (尝试 ${correctionRetryCount + 1}/${MAX_RETRIES + 1})`, "processing");
+             correctedTranscriptDiv.textContent = "AI 检查中..."; // Placeholder
+             copyCorrectionButton.disabled = true;
+             resetCorrectionCopyButtonState();
+
+             try {
+                const payload = {
+                    model: MODEL_NAME,
+                    messages: [ {
+                        role: "user",
+                        content: [
+                            { type: "text", text: CORRECTION_PROMPT },
+                            { type: "text", text: "\n---\n" + originalText + "\n---" } // Send original text clearly marked
+                        ]
+                    } ],
+                    max_tokens: 1600 // Allow slightly more tokens for correction
+                 };
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                 if (!response.ok) {
+                    let errorBody = `HTTP 状态 ${response.status}`;
+                    try { errorBody = await response.text(); } catch (e) { /* ignore */ }
+                    throw new Error(`API 修正请求失败: ${errorBody.substring(0, 100)}`);
+                }
+
+                 const data = await response.json();
+
+                let correctedText = "";
+                 // Standard OpenAI-like response structure
+                 if (data.choices && data.choices.length > 0 && data.choices[0].message && data.choices[0].message.content) {
+                     correctedText = data.choices[0].message.content.trim();
+                 // Potential Gemini structure passthrough
+                 } else if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0 && data.candidates[0].content.parts[0].text) {
+                    correctedText = data.candidates[0].content.parts[0].text.trim();
+                 } else {
+                     console.warn("未知的 API 修正响应结构:", data);
+                     correctedText = "[无法解析修正响应]";
+                     updateStatus("收到无法解析的修正响应。", "error");
+                     copyCorrectionButton.disabled = true;
+                 }
+
+                 if (correctedText && correctedText !== "[无法解析修正响应]") {
+                    correctedTranscriptDiv.textContent = correctedText;
+                    updateStatus("AI 修正完成。", "success"); // Final success status
+                    copyCorrectionButton.disabled = false;
+                 } else if (correctedText !== "[无法解析修正响应]") { // Handle empty correction
+                     correctedTranscriptDiv.textContent = "[AI 未返回有效修正文本]";
+                     updateStatus("AI 修正未返回有效文本。", "info");
+                     copyCorrectionButton.disabled = true;
+                 }
+                 // else case (解析错误) handled above
+
+             } catch (error) {
+                 console.error("调用 AI 修正时出错:", error);
+                 if (correctionRetryCount < MAX_RETRIES) {
+                     correctionRetryCount++;
+                     updateStatus(`修正 API 错误: ${error.message}. 2秒后重试... (尝试 ${correctionRetryCount + 1}/${MAX_RETRIES + 1})`, "error");
+                     setTimeout(() => callAiForCorrection(originalText), 2000);
+                 } else {
+                     updateStatus(`修正 API 错误 (${MAX_RETRIES + 1}次尝试失败): ${error.message}`, "error");
+                     correctedTranscriptDiv.textContent = "[AI 修正失败]";
+                     copyCorrectionButton.disabled = true;
+                     // Keep original transcript accessible if it succeeded
+                 }
+             }
+         }
+
 
         // Reset Button and Spinner State
         function resetButtonState() {
@@ -686,43 +844,73 @@
              recordButtonSpinner.style.display = 'none';
          }
 
-         function resetCopyButtonState() {
+        function resetCopyButtonState() {
              copyButton.classList.remove('copied');
              copyButtonText.textContent = "复制";
              copyButtonCopyIcon.style.display = 'inline-block';
              copyButtonCheckIcon.style.display = 'none';
          }
+        // --- NEW: Reset Correction Copy Button ---
+         function resetCorrectionCopyButtonState() {
+             copyCorrectionButton.classList.remove('copied');
+             copyCorrectionButtonText.textContent = "复制";
+             copyCorrectionButtonCopyIcon.style.display = 'inline-block';
+             copyCorrectionButtonCheckIcon.style.display = 'none';
+         }
 
 
-        // Copy Transcript to Clipboard
+        // Copy Original Transcript to Clipboard
         function copyTranscript() {
             const textToCopy = transcriptDiv.textContent;
             if (!textToCopy || textToCopy.startsWith("[")) { // Check for empty or error messages
-                updateStatus("没有可复制的内容。", "info");
+                updateStatus("原始文本没有可复制的内容。", "info");
                 return;
             }
 
             navigator.clipboard.writeText(textToCopy).then(() => {
-                 updateStatus("文本已复制到剪贴板！", "success");
-                 copyButton.classList.add('copied');
-                 copyButtonText.textContent = "已复制";
-                 copyButtonCopyIcon.style.display = 'none';
-                 copyButtonCheckIcon.style.display = 'inline-block';
+                // Don't overwrite main status if correction is happening/done
+                // updateStatus("原始文本已复制！", "success");
+                copyButton.classList.add('copied');
+                copyButtonText.textContent = "已复制";
+                copyButtonCopyIcon.style.display = 'none';
+                copyButtonCheckIcon.style.display = 'inline-block';
 
                 // Revert button state after a short delay
                 setTimeout(() => {
                     resetCopyButtonState();
-                    // Optionally revert status if needed, or leave success message
-                    // if (statusContainer.classList.contains('success')) {
-                    //     updateStatus("转换完成。", "success"); // Keep success status
-                    // }
                 }, 2000);
             }).catch(err => {
-                console.error('复制文本失败: ', err);
-                updateStatus("复制失败，请手动复制。", "error");
+                console.error('复制原始文本失败: ', err);
+                updateStatus("复制原始文本失败，请手动复制。", "error");
                  resetCopyButtonState();
             });
         }
+
+        // --- NEW: Copy Corrected Transcript ---
+        function copyCorrectedTranscript() {
+             const textToCopy = correctedTranscriptDiv.textContent;
+             if (!textToCopy || textToCopy.startsWith("[")) { // Check for empty or error messages
+                 updateStatus("修正文本没有可复制的内容。", "info");
+                 return;
+             }
+
+             navigator.clipboard.writeText(textToCopy).then(() => {
+                 // updateStatus("修正文本已复制！", "success"); // Maybe update status briefly?
+                 copyCorrectionButton.classList.add('copied');
+                 copyCorrectionButtonText.textContent = "已复制";
+                 copyCorrectionButtonCopyIcon.style.display = 'none';
+                 copyCorrectionButtonCheckIcon.style.display = 'inline-block';
+
+                 // Revert button state after a short delay
+                 setTimeout(() => {
+                     resetCorrectionCopyButtonState();
+                 }, 2000);
+             }).catch(err => {
+                 console.error('复制修正文本失败: ', err);
+                 updateStatus("复制修正文本失败，请手动复制。", "error");
+                  resetCorrectionCopyButtonState();
+             });
+         }
 
         // --- Event Listeners ---
         recordButton.addEventListener('click', () => {
@@ -734,6 +922,8 @@
         });
 
         copyButton.addEventListener('click', copyTranscript);
+        // --- NEW: Listener for correction copy button ---
+        copyCorrectionButton.addEventListener('click', copyCorrectedTranscript);
 
         // --- Initialization ---
         window.onload = () => {
@@ -741,7 +931,10 @@
              buttonText.textContent = "检查权限...";
              setRecordButtonIcon('mic'); // Show mic icon initially
              requestMicrophonePermission();
-         };
+             // Initialize correction area
+             correctedTranscriptDiv.textContent = "";
+             copyCorrectionButton.disabled = true;
+          };
 
     </script>
 
