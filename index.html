@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>语音转文本工具</title>
+    <style>
+        /* Google Font (Optional) */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        :root {
+            --primary-color: #007bff; /* 主题蓝 */
+            --primary-light: #e6f2ff;
+            --primary-dark: #0056b3;
+            --secondary-color: #6c757d; /* 次要灰 */
+            --success-color: #28a745; /* 成功绿 */
+            --success-light: #eaf7ec;
+            --error-color: #dc3545; /* 错误红 */
+            --error-light: #fdecea;
+            --warning-color: #ffc107; /* 警告黄 */
+            --warning-light: #fff8e1;
+            --recording-color: #e63946; /* 录音红 */
+            --background-color: #f8f9fa; /* 页面背景 */
+            --card-background: #ffffff; /* 卡片背景 */
+            --text-color: #343a40; /* 主要文字颜色 */
+            --text-muted: #6c757d; /* 次要文字颜色 */
+            --border-color: #dee2e6; /* 边框颜色 */
+            --font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            --transition-speed: 0.3s;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--card-background);
+            padding: 30px 40px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            text-align: center;
+            max-width: 650px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            transition: all var(--transition-speed) ease;
+        }
+
+        h1 {
+            color: var(--primary-dark);
+            margin-top: 0;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+
+        .description {
+            color: var(--text-muted);
+            font-size: 0.95em;
+            margin-bottom: 15px;
+        }
+
+        #recordButton {
+            padding: 12px 25px;
+            font-size: 1.1em;
+            font-weight: 500;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            background-color: var(--primary-color);
+            color: white;
+            transition: background-color var(--transition-speed) ease, transform 0.1s ease, box-shadow 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 0 auto; /* Center button */
+            min-width: 200px; /* Ensure minimum width */
+            box-shadow: 0 2px 5px rgba(0, 123, 255, 0.3);
+        }
+         #recordButton .icon {
+             width: 20px;
+             height: 20px;
+             fill: currentColor; /* Icon color matches text */
+         }
+
+
+        #recordButton:hover:not(:disabled) {
+            background-color: var(--primary-dark);
+            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.4);
+        }
+
+        #recordButton:active:not(:disabled) {
+            transform: scale(0.98);
+             box-shadow: 0 1px 3px rgba(0, 123, 255, 0.3);
+        }
+
+        #recordButton:disabled {
+             background-color: var(--secondary-color);
+             opacity: 0.7;
+             cursor: not-allowed;
+             box-shadow: none;
+         }
+
+        #recordButton.recording {
+            background-color: var(--recording-color);
+            animation: pulse 1.5s infinite ease-in-out;
+             box-shadow: 0 2px 5px rgba(230, 57, 70, 0.4);
+        }
+        #recordButton.recording:hover:not(:disabled) {
+            background-color: #c81d25; /* Darker red on hover */
+            box-shadow: 0 4px 8px rgba(230, 57, 70, 0.5);
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.7); }
+            70% { box-shadow: 0 0 0 12px rgba(230, 57, 70, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(230, 57, 70, 0); }
+        }
+
+
+        #recordButton.processing {
+             background-color: var(--warning-color);
+             cursor: not-allowed;
+             color: #333;
+             box-shadow: 0 2px 5px rgba(255, 193, 7, 0.4);
+         }
+         #recordButton.processing .spinner {
+            display: inline-block;
+         }
+         #recordButton.processing .icon { /* Hide main icon when processing */
+             display: none;
+         }
+
+
+        #statusContainer {
+            margin-top: 10px;
+            padding: 10px 15px;
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            min-height: 24px; /* Prevent layout shift */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
+            background-color: var(--background-color); /* Default background */
+            color: var(--text-muted);
+         }
+         #statusContainer .icon {
+             width: 18px;
+             height: 18px;
+             fill: currentColor;
+             display: none; /* Hide icons by default, show based on class */
+         }
+         #statusContainer.idle {
+             background-color: var(--background-color);
+             color: var(--text-muted);
+         }
+         #statusContainer.info,
+         #statusContainer.permission {
+             background-color: var(--primary-light);
+             color: var(--primary-dark);
+         }
+         #statusContainer.recording {
+             background-color: #ffebee; /* Light red */
+             color: var(--recording-color);
+             font-weight: bold;
+         }
+         #statusContainer.processing {
+             background-color: var(--warning-light);
+             color: #b98900;
+         }
+          #statusContainer.success {
+              background-color: var(--success-light);
+              color: var(--success-color);
+          }
+          #statusContainer.error {
+              background-color: var(--error-light);
+              color: var(--error-color);
+          }
+
+         /* Show icons based on status class */
+         #statusContainer.success .icon-success,
+         #statusContainer.error .icon-error,
+         #statusContainer.processing .spinner {
+             display: inline-block;
+         }
+
+
+        #transcriptContainer {
+            margin-top: 15px;
+            width: 100%;
+            text-align: left;
+            position: relative; /* For positioning the copy button */
+        }
+
+        #transcriptLabel {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        #transcript {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background-color: #f1f3f5; /* Slightly different background */
+            font-size: 1em;
+            line-height: 1.6;
+            box-sizing: border-box;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 350px;
+            color: var(--text-color);
+            transition: border-color var(--transition-speed) ease;
+        }
+        #transcript:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px var(--primary-light);
+        }
+
+        #copyButton {
+            padding: 8px 15px;
+            font-size: 0.9em;
+            font-weight: 500;
+            border: 1px solid var(--secondary-color);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            background-color: var(--card-background); /* Match card background */
+            color: var(--secondary-color);
+            transition: all var(--transition-speed) ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            /* Position button inside/near the text area */
+             position: absolute;
+             top: -40px; /* Adjust as needed */
+             right: 0;
+             z-index: 10; /* Ensure it's above the label */
+        }
+        #copyButton .icon {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+
+        #copyButton:hover:not(:disabled) {
+            background-color: var(--secondary-color);
+            color: white;
+            border-color: var(--secondary-color);
+        }
+         #copyButton:active:not(:disabled) {
+             transform: scale(0.97);
+         }
+
+        #copyButton:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+         #copyButton.copied {
+             background-color: var(--success-color);
+             border-color: var(--success-color);
+             color: white;
+         }
+          #copyButton.copied .icon-copy {
+             display: none;
+          }
+          #copyButton.copied .icon-check {
+             display: inline-block !important; /* Force show check icon */
+         }
+
+
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--text-color); /* Match button text color */
+            animation: spin 1s linear infinite;
+            display: none; /* Hide by default */
+        }
+        #recordButton.processing .spinner {
+             border-top-color: #333; /* Spinner color for processing button */
+         }
+         #statusContainer .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+             border-top-color: currentColor; /* Spinner color matches status text color */
+             animation: spin 1s linear infinite;
+             display: none; /* Hide by default */
+         }
+
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 700px) {
+            .container {
+                padding: 20px;
+                 gap: 20px;
+            }
+             h1 {
+                 font-size: 1.6em;
+             }
+             #recordButton {
+                 font-size: 1em;
+                 padding: 10px 20px;
+                 min-width: 180px;
+             }
+              #transcript {
+                  min-height: 100px;
+                  max-height: 250px;
+              }
+             #copyButton {
+                 padding: 6px 12px;
+                 font-size: 0.85em;
+                 top: -35px; /* Adjust for smaller screens */
+             }
+        }
+         @media (max-width: 400px) {
+              h1 {
+                  font-size: 1.4em;
+              }
+              #recordButton {
+                  width: 100%; /* Full width on very small screens */
+              }
+               #copyButton {
+                 position: static; /* Stack copy button below on very small screens */
+                 margin-top: 10px;
+                 align-self: flex-end;
+             }
+         }
+
+         /* SVG Icons - Define them once */
+         .icon-mic { display: inline-block; }
+         .icon-stop { display: none; } /* Initially hidden */
+         .icon-copy { display: inline-block; }
+         .icon-check { display: none; } /* Initially hidden */
+         .icon-success { display: none; } /* Initially hidden */
+         .icon-error { display: none; } /* Initially hidden */
+
+    </style>
+</head>
+<body>
+    <svg width="0" height="0" style="position:absolute">
+      <defs>
+        <symbol id="icon-mic" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.58 14.86 14.49 16 12 16s-4.58-1.14-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.18 3.02 2.5 5.36 5.43 5.77V21h-2c-.55 0-1 .45-1 1s.45 1 1 1h6c.55 0 1-.45 1-1s-.45-1-1-1h-2v-2.09c2.93-.41 5.25-2.75 5.43-5.77.09-.6-.39-1.14-1-1.14z"/></symbol>
+        <symbol id="icon-stop" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></symbol>
+        <symbol id="icon-copy" viewBox="0 0 24 24"><path d="M16 1H4C2.9 1 2 1.9 2 3v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></symbol>
+        <symbol id="icon-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></symbol>
+        <symbol id="icon-success" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 16.17l7.59-7.59L19 10l-9 9z"/></symbol>
+        <symbol id="icon-error" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></symbol>
+      </defs>
+    </svg>
+
+    <div class="container">
+        <h1>语音转文本</h1>
+        <p class="description">点击按钮开始录音，再次点击停止并进行语音转文字。</p>
+
+        <button id="recordButton">
+            <svg class="icon icon-mic" aria-hidden="true"><use xlink:href="#icon-mic"></use></svg>
+            <svg class="icon icon-stop" aria-hidden="true"><use xlink:href="#icon-stop"></use></svg>
+            <span id="buttonText">开始录音</span>
+            <span class="spinner"></span> </button>
+
+        <div id="statusContainer" class="idle">
+             <svg class="icon icon-success" aria-hidden="true"><use xlink:href="#icon-success"></use></svg>
+             <svg class="icon icon-error" aria-hidden="true"><use xlink:href="#icon-error"></use></svg>
+             <span class="spinner"></span> <span id="statusText">状态: 空闲</span>
+        </div>
+
+
+        <div id="transcriptContainer">
+            <label id="transcriptLabel" for="transcript">转换结果:</label>
+            <div id="transcript" role="log" aria-live="polite" contenteditable="false" aria-label="转录文本区域"></div>
+             <button id="copyButton" disabled title="复制文本">
+                 <svg class="icon icon-copy" aria-hidden="true"><use xlink:href="#icon-copy"></use></svg>
+                 <svg class="icon icon-check" aria-hidden="true"><use xlink:href="#icon-check"></use></svg>
+                 <span class="copy-button-text">复制</span>
+             </button>
+        </div>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const API_KEY = "sk-e2a7YHPCZF3yPxpdu9zguWbNlawBJwAQ3a0jav4U6B5LlECK"; // YOUR_API_KEY - Still insecure client-side!
+        const API_URL = "https://api.zetatechs.com/v1/chat/completions"; // Proxy URL + Endpoint
+        const MODEL_NAME = "gemini-2.0-flash";
+        const TRANSCRIPTION_PROMPT = "Transcribe the following audio. Only provide the transcribed text, nothing else."; // English prompt for AI logic
+        const AUDIO_MIME_TYPE = 'audio/ogg;codecs=opus'; // Common & supported format
+        const MAX_RETRIES = 2; // Max attempts for API call on failure (reduced from 3)
+
+        // --- DOM Elements ---
+        const recordButton = document.getElementById('recordButton');
+        const buttonText = document.getElementById('buttonText');
+        const statusContainer = document.getElementById('statusContainer');
+        const statusText = document.getElementById('statusText');
+        const transcriptDiv = document.getElementById('transcript');
+        const copyButton = document.getElementById('copyButton');
+        const copyButtonText = copyButton.querySelector('.copy-button-text');
+        const recordButtonSpinner = recordButton.querySelector('.spinner');
+        const statusSpinner = statusContainer.querySelector('.spinner');
+
+        // Icon Elements inside recordButton
+        const recordButtonMicIcon = recordButton.querySelector('.icon-mic');
+        const recordButtonStopIcon = recordButton.querySelector('.icon-stop');
+        // Icon Elements inside copyButton
+         const copyButtonCopyIcon = copyButton.querySelector('.icon-copy');
+         const copyButtonCheckIcon = copyButton.querySelector('.icon-check');
+
+
+        // --- State Variables ---
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+        let stream;
+        let permissionGranted = false;
+        let retryCount = 0;
+
+        // --- Functions ---
+
+        // Manage Button Icon Visibility
+        function setRecordButtonIcon(state) { // 'mic', 'stop'
+             recordButtonMicIcon.style.display = (state === 'mic') ? 'inline-block' : 'none';
+             recordButtonStopIcon.style.display = (state === 'stop') ? 'inline-block' : 'none';
+             recordButtonSpinner.style.display = 'none'; // Ensure spinner is hidden initially
+         }
+
+        // Request Microphone Permission on Load
+        async function requestMicrophonePermission() {
+            updateStatus("正在请求麦克风权限...", "permission");
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                permissionGranted = true;
+                updateStatus("麦克风访问已授权，准备录音。", "info");
+                // Release the initial stream to avoid keeping the mic active
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+                recordButton.disabled = false; // Enable button now
+                setRecordButtonIcon('mic'); // Set initial icon
+            } catch (err) {
+                console.error("访问麦克风失败:", err);
+                updateStatus("麦克风访问被拒绝。请在浏览器设置中允许访问。", "error");
+                permissionGranted = false;
+                recordButton.disabled = true;
+                buttonText.textContent = "无权限";
+                setRecordButtonIcon('mic'); // Keep mic icon, but disabled
+            }
+        }
+
+        // Update Status Display
+        function updateStatus(message, type = "idle") { // type: idle, info, permission, recording, processing, success, error
+             statusText.textContent = `状态: ${message}`;
+             statusContainer.className = `status-container ${type}`; // Use class for styling & icon visibility
+
+             // Show/hide spinner in status area only when processing
+             statusSpinner.style.display = (type === 'processing') ? 'inline-block' : 'none';
+         }
+
+        // Start Recording
+        async function startRecording() {
+             if (!permissionGranted) {
+                  updateStatus("无法录音，缺少麦克风权限。", "error");
+                  await requestMicrophonePermission(); // Try again
+                  if (!permissionGranted) return;
+              }
+
+              if (isRecording) return;
+
+              updateStatus("正在初始化...", "info");
+              audioChunks = [];
+              transcriptDiv.textContent = ""; // Clear previous transcript
+              copyButton.disabled = true; // Disable copy button
+              resetCopyButtonState(); // Reset copy button visual state
+
+              try {
+                  stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+                  let options = {};
+                  if (MediaRecorder.isTypeSupported(AUDIO_MIME_TYPE)) {
+                      options.mimeType = AUDIO_MIME_TYPE;
+                  } // else use browser default
+
+                  mediaRecorder = new MediaRecorder(stream, options);
+
+                  mediaRecorder.ondataavailable = event => {
+                      if (event.data.size > 0) {
+                          audioChunks.push(event.data);
+                      }
+                  };
+
+                  mediaRecorder.onstop = () => {
+                      isRecording = false;
+                      recordButton.classList.remove('recording');
+                      recordButton.classList.add('processing');
+                      buttonText.textContent = "处理中...";
+                      setRecordButtonIcon(null); // Hide icons
+                      recordButtonSpinner.style.display = 'inline-block'; // Show button spinner
+                      recordButton.disabled = true;
+                      updateStatus("正在处理音频...", "processing");
+
+                      if (stream) {
+                          stream.getTracks().forEach(track => track.stop());
+                          stream = null;
+                      }
+
+                      const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/ogg' }); // Fallback mime type
+                      retryCount = 0;
+                      sendAudioToApi(audioBlob);
+                  };
+
+                  mediaRecorder.onerror = (event) => {
+                      console.error("MediaRecorder 错误:", event.error);
+                      updateStatus(`录音出错: ${event.error.name || '未知错误'}`, "error");
+                      stopRecordingCleanup(); // Clean up state forcefully
+                  };
+
+                  mediaRecorder.start();
+                  isRecording = true;
+                  recordButton.classList.add('recording');
+                  buttonText.textContent = "停止录音";
+                  setRecordButtonIcon('stop'); // Show stop icon
+                  updateStatus("正在录音...", "recording");
+
+              } catch (err) {
+                  console.error("开始录音失败:", err);
+                  updateStatus(`无法开始录音: ${err.message}`, "error");
+                  stopRecordingCleanup(); // Ensure state is clean
+              }
+        }
+
+         // Force cleanup if recording fails to start or has an error
+         function stopRecordingCleanup() {
+             isRecording = false;
+             if (stream) {
+                 stream.getTracks().forEach(track => track.stop());
+                 stream = null;
+             }
+             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                 try { mediaRecorder.stop(); } catch(e) {} // Try to stop if possible
+             }
+             resetButtonState(); // Reset button visuals
+         }
+
+
+        // Stop Recording (normal flow)
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                try {
+                    mediaRecorder.stop(); // Triggers 'onstop'
+                } catch (error) {
+                    console.error("停止 MediaRecorder 出错:", error);
+                    updateStatus("停止录音时出错。", "error");
+                    stopRecordingCleanup(); // Force cleanup on error
+                }
+            }
+        }
+
+        // Convert Blob to Base64
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const base64String = reader.result.split(',')[1];
+                    resolve(base64String);
+                };
+                reader.onerror = (error) => reject(new Error("无法读取音频文件: " + error));
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        // Send Audio to API
+        async function sendAudioToApi(audioBlob) {
+            updateStatus(`正在发送到 AI (尝试 ${retryCount + 1}/${MAX_RETRIES + 1})...`, "processing");
+             // Get the actual mimeType used for recording
+             const recordedMimeType = mediaRecorder?.mimeType || AUDIO_MIME_TYPE;
+
+            try {
+                const base64Audio = await blobToBase64(audioBlob);
+
+                const payload = {
+                    model: MODEL_NAME,
+                    messages: [ {
+                            role: "user",
+                            content: [
+                                { type: "text", text: TRANSCRIPTION_PROMPT },
+                                {
+                                    type: "image_url", // Adapting to common proxy pattern
+                                    image_url: { url: `data:${recordedMimeType};base64,${base64Audio}` }
+                                }
+                            ]
+                        }
+                    ],
+                    max_tokens: 1500 // Increased slightly
+                };
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    let errorBody = `HTTP 状态 ${response.status}`;
+                    try { errorBody = await response.text(); } catch (e) {}
+                    throw new Error(`API 请求失败: ${errorBody.substring(0, 100)}`); // Limit error msg length
+                }
+
+                const data = await response.json();
+                resetButtonState(); // Reset button now we have a response (or final error)
+
+                let transcript = "";
+                 // Standard OpenAI-like response structure
+                 if (data.choices && data.choices.length > 0 && data.choices[0].message && data.choices[0].message.content) {
+                     transcript = data.choices[0].message.content.trim();
+                 // Potential Gemini structure passthrough
+                 } else if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0 && data.candidates[0].content.parts[0].text) {
+                    transcript = data.candidates[0].content.parts[0].text.trim();
+                 } else {
+                     console.warn("未知的 API 响应结构:", data);
+                     transcript = "[无法解析响应]"; // Provide feedback
+                     updateStatus("收到无法解析的响应。", "error");
+                      copyButton.disabled = true;
+                 }
+
+
+                if (transcript && transcript !== "[无法解析响应]") {
+                    transcriptDiv.textContent = transcript;
+                    updateStatus("转换完成。", "success");
+                    copyButton.disabled = false;
+                } else if (transcript !== "[无法解析响应]") { // Handle empty transcript case
+                     transcriptDiv.textContent = "[未识别到语音或返回为空]";
+                     updateStatus("未返回有效文本。", "info"); // Use 'info' or 'warning'
+                     copyButton.disabled = true;
+                } // else case (解析错误) handled above
+
+
+            } catch (error) {
+                console.error("发送音频到 API 时出错:", error);
+                if (retryCount < MAX_RETRIES) {
+                    retryCount++;
+                    updateStatus(`API 错误: ${error.message}. 2秒后重试... (尝试 ${retryCount + 1}/${MAX_RETRIES + 1})`, "error");
+                    setTimeout(() => sendAudioToApi(audioBlob), 2000);
+                } else {
+                    updateStatus(`API 错误 (${MAX_RETRIES + 1}次尝试失败): ${error.message}`, "error");
+                    transcriptDiv.textContent = "[转换失败]";
+                     resetButtonState(); // Ensure button is usable after final failure
+                     copyButton.disabled = true;
+                }
+            }
+        }
+
+        // Reset Button and Spinner State
+        function resetButtonState() {
+             recordButton.classList.remove('processing', 'recording');
+             recordButton.disabled = false;
+             buttonText.textContent = "开始录音";
+             setRecordButtonIcon('mic'); // Reset icon to mic
+             recordButtonSpinner.style.display = 'none';
+         }
+
+         function resetCopyButtonState() {
+             copyButton.classList.remove('copied');
+             copyButtonText.textContent = "复制";
+             copyButtonCopyIcon.style.display = 'inline-block';
+             copyButtonCheckIcon.style.display = 'none';
+         }
+
+
+        // Copy Transcript to Clipboard
+        function copyTranscript() {
+            const textToCopy = transcriptDiv.textContent;
+            if (!textToCopy || textToCopy.startsWith("[")) { // Check for empty or error messages
+                updateStatus("没有可复制的内容。", "info");
+                return;
+            }
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                 updateStatus("文本已复制到剪贴板！", "success");
+                 copyButton.classList.add('copied');
+                 copyButtonText.textContent = "已复制";
+                 copyButtonCopyIcon.style.display = 'none';
+                 copyButtonCheckIcon.style.display = 'inline-block';
+
+                // Revert button state after a short delay
+                setTimeout(() => {
+                    resetCopyButtonState();
+                    // Optionally revert status if needed, or leave success message
+                    // if (statusContainer.classList.contains('success')) {
+                    //     updateStatus("转换完成。", "success"); // Keep success status
+                    // }
+                }, 2000);
+            }).catch(err => {
+                console.error('复制文本失败: ', err);
+                updateStatus("复制失败，请手动复制。", "error");
+                 resetCopyButtonState();
+            });
+        }
+
+        // --- Event Listeners ---
+        recordButton.addEventListener('click', () => {
+            if (!isRecording) {
+                startRecording();
+            } else {
+                stopRecording();
+            }
+        });
+
+        copyButton.addEventListener('click', copyTranscript);
+
+        // --- Initialization ---
+        window.onload = () => {
+             recordButton.disabled = true; // Disable until permission checked
+             buttonText.textContent = "检查权限...";
+             setRecordButtonIcon('mic'); // Show mic icon initially
+             requestMicrophonePermission();
+         };
+
+    </script>
+
+</body>
+</html>
