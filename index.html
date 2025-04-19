@@ -460,11 +460,7 @@
         const MODEL_NAME = "gemini-2.5-flash-preview-04-17-nothinking";
         const TRANSCRIPTION_PROMPT = "Transcribe the following audio. Only provide the transcribed text, nothing else.请你使用简体中文"; // AI 转录提示 (英文)
         // --- NEW: Correction Prompt ---
-        const CORRECTION_PROMPT = "Please proofread and correct the following speech-to-text content for fluency, typos, extra spaces, punctuation errors, and other mistakes.
-
-Output ONLY the corrected text without any explanations or other content.
-
-This is because the content was generated after the user used speech-to-text, so you need to correct any minor deviations or errors."; // AI 修正提示 (英文)
+        const CORRECTION_PROMPT = "Please proofread and correct the following speech-to-text content for fluency, typos, extra spaces, punctuation errors, and other mistakes.Output ONLY the corrected text without any explanations or other content.This is because the content was generated after the user used speech-to-text, so you need to correct any minor deviations or errors."; // AI 修正提示 (英文)
         const AUDIO_MIME_TYPE = 'audio/ogg;codecs=opus'; // 常用格式
         const MAX_RETRIES = 2; // API 失败时最大重试次数
 
